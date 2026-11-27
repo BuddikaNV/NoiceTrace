@@ -826,26 +826,6 @@ const chartPoints = chartSamples.map((value, index) => {
     return `${x},${y}`;
 }).join(" ");
 
-const chartMarkup = `
-    <div class="chart">
-        <h3>Measurement Level Over Time</h3>
-        <svg viewBox="0 0 800 170" role="img"
-             aria-label="Graph of measured microphone signal levels">
-            <line x1="10" y1="10" x2="790" y2="10" stroke="#dce3e8"/>
-            <line x1="10" y1="80" x2="790" y2="80" stroke="#dce3e8"/>
-            <line x1="10" y1="150" x2="790" y2="150" stroke="#dce3e8"/>
-            <polyline points="${chartPoints}"
-                fill="none" stroke="#087f68"
-                stroke-width="3" stroke-linejoin="round"
-                stroke-linecap="round"/>
-            <text x="12" y="9" font-size="10" fill="#667085">0 dBFS</text>
-            <text x="12" y="78" font-size="10" fill="#667085">-30</text>
-            <text x="12" y="148" font-size="10" fill="#667085">-60</text>
-        </svg>
-        <p>Relative microphone signal level (dBFS)</p>
-    </div>
-`;
-
     const item = {
         date: new Date().toLocaleString(),
         duration: formatTime(elapsedBeforeRun),
@@ -1000,8 +980,6 @@ function downloadPDFReport() {
         </div>
 
         <div class="details">
-            ${chartMarkup}
-            
             <h3>Threshold Information</h3>
             <p><strong>Selected threshold:</strong> ${threshold} dBFS</p>
             <p><strong>Estimated time above threshold:</strong>
