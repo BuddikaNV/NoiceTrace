@@ -330,6 +330,7 @@ footer {
         <button class="secondary" id="advancedPauseBtn" disabled>Pause</button>
         <button class="danger" id="advancedStopBtn" disabled>Stop</button>
         <button class="secondary" id="saveBtn" disabled>Save summary</button>
+        <button class="primary" id="pdfBtn" disabled>Download PDF report</button>
     </div>
 
     <p class="message" id="advancedMessage">
@@ -496,6 +497,7 @@ function updateDuration() {
 }
 
 function resetMeasurement() {
+    $("pdfBtn").disabled = true;
     samples = [];
     minimum = Infinity;
     maximum = -Infinity;
@@ -708,7 +710,7 @@ function stopMeasurement() {
     $("advancedStatus").style.color = "#a8b4c7";
 
     $("saveBtn").disabled = samples.length === 0;
-
+    $("pdfBtn").disabled = samples.length === 0;
     setMessage("Measurement stopped. You can save the summary in Advanced Mode.");
     updateDuration();
 }
@@ -837,7 +839,142 @@ function saveSummary() {
         setMessage("Could not save history. Browser storage may be unavailable or full.");
     }
 }
+function downloadPDFReport() {
+    if (samples.length === 0 || !measurementEnded) {
+        alert("Please complete a measurement before creating a report.");
+        return;
+    }
 
+    const average = (total / samples.length).toFixed(1);
+    const date = new Date().toLocaleString();
+    const duration = formatTime(elapsedBeforeRun);
+    const threshold = getThreshold();
+
+    const reportWindow = window.open("", "_blank");
+
+    if (!reportWindow) {
+        alert("Please allow pop-ups for NoiceTrace to create your PDF report.");
+        return;
+    }
+
+    const report = `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>NoiceTrace Measurement Report</title>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                color: #202938;
+                max-width: 800px;
+                margin: 40px auto;
+                padding: 25px;
+                line-height: 1.6;
+            }
+            h1 { color: #087f68; margin-bottom: 5px; }
+            .subtitle { color: #667085; }
+            .divider {
+                border: 0;
+                border-top: 2px solid #40d9ad;
+                margin: 25px 0;
+            }
+            .stats {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 12px;
+                margin: 25px 0;
+            }
+            .stat {
+                border: 1px solid #dce3e8;
+                border-radius: 10px;
+                padding: 15px;
+                text-align: center;
+            }
+            .stat strong {
+                display: block;
+                font-size: 25px;
+                color: #087f68;
+            }
+            .stat span { font-size: 12px; color: #667085; }
+            .details {
+                background: #f3f7f6;
+                padding: 18px;
+                border-radius: 10px;
+            }
+            .warning {
+                background: #fff8e6;
+                border-left: 4px solid #e5a000;
+                padding: 15px;
+                margin-top: 25px;
+                font-size: 13px;
+            }
+            footer {
+                margin-top: 35px;
+                color: #667085;
+                font-size: 12px;
+                text-align: center;
+            }
+            @media print {
+                body { margin: 15mm auto; padding: 0; }
+                button { display: none; }
+            }
+        </style>
+    </head>
+    <body>
+        <h1>NoiceTrace</h1>
+        <div class="subtitle">Noise Monitoring Measurement Report</div>
+
+        <hr class="divider">
+
+        <h2>Measurement Summary</h2>
+        <p><strong>Report generated:</strong> ${date}</p>
+        <p><strong>Measurement duration:</strong> ${duration}</p>
+
+        <div class="stats">
+            <div class="stat">
+                <strong>${average}</strong>
+                <span>Average dBFS</span>
+            </div>
+            <div class="stat">
+                <strong>${minimum.toFixed(1)}</strong>
+                <span>Minimum dBFS</span>
+            </div>
+            <div class="stat">
+                <strong>${maximum.toFixed(1)}</strong>
+                <span>Maximum dBFS</span>
+            </div>
+        </div>
+
+        <div class="details">
+            <h3>Threshold Information</h3>
+            <p><strong>Selected threshold:</strong> ${threshold} dBFS</p>
+            <p><strong>Estimated time above threshold:</strong>
+                ${formatTime(aboveThresholdMs)}</p>
+            <p><strong>Number of samples:</strong> ${samples.length}</p>
+        </div>
+
+        <div class="warning">
+            <strong>Important accuracy notice</strong><br>
+            These readings represent relative digital microphone signal
+            levels (dBFS). They are not calibrated sound pressure levels
+            (dB SPL or dBA). Results may vary depending on the microphone,
+            device and browser. This report is not a certified noise
+            measurement or a legal compliance document.
+        </div>
+
+        <footer>
+            Generated by NoiceTrace · Audio is processed locally
+        </footer>
+
+        <button onclick="window.print()">Print or Save as PDF</button>
+    </body>
+    </html>`;
+
+    reportWindow.document.open();
+    reportWindow.document.write(report);
+    reportWindow.document.close();
+}
 function exportCSV() {
     const history = loadHistory();
 
@@ -879,6 +1016,7 @@ $("stopBtn").addEventListener("click", stopMeasurement);
 $("advancedStopBtn").addEventListener("click", stopMeasurement);
 
 $("saveBtn").addEventListener("click", saveSummary);
+$("pdfBtn").addEventListener("click", downloadPDFReport);
 $("exportBtn").addEventListener("click", exportCSV);
 
 $("clearHistoryBtn").addEventListener("click", () => {
