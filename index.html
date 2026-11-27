@@ -2,13 +2,313 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NoiceTrace</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#101827">
+<title>NoiceTrace | Understand Your Sound Environment</title>
+<meta name="description" content="A free, privacy-focused browser noise meter. Check relative sound levels using your device microphone.">
+
+<style>
+:root {
+    --bg: #101827;
+    --panel: #192538;
+    --text: #f5f7fb;
+    --muted: #a8b4c7;
+    --accent: #40d9ad;
+    --border: #2c3a50;
+}
+* { box-sizing: border-box; }
+body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: Arial, sans-serif;
+}
+header {
+    padding: 22px 7%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border);
+}
+.logo { font-size: 25px; font-weight: bold; }
+.logo span { color: var(--accent); }
+header small { color: var(--muted); }
+main { max-width: 1050px; margin: auto; padding: 55px 20px; }
+.hero { text-align: center; margin-bottom: 42px; }
+.hero h1 { font-size: clamp(32px, 5vw, 48px); margin: 0 0 15px; }
+.hero h1 span { color: var(--accent); }
+.hero p { color: var(--muted); line-height: 1.7; max-width: 650px; margin: auto; }
+.meter-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 32px;
+    max-width: 650px;
+    margin: auto;
+    text-align: center;
+}
+.mode-label {
+    color: var(--accent);
+    font-size: 13px;
+    font-weight: bold;
+    letter-spacing: 2px;
+}
+.level {
+    font-size: clamp(55px, 12vw, 85px);
+    font-weight: bold;
+    margin: 18px 0 5px;
+}
+.unit { color: var(--muted); font-size: 14px; }
+.status { margin: 18px 0; font-size: 19px; font-weight: bold; }
+.meter-track {
+    height: 14px;
+    background: #0c1421;
+    border-radius: 20px;
+    overflow: hidden;
+    margin: 25px 0;
+}
+.meter-fill {
+    width: 0%;
+    height: 100%;
+    background: var(--accent);
+    border-radius: 20px;
+    transition: width .15s;
+}
+.buttons { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; }
+button {
+    border: 0;
+    border-radius: 10px;
+    padding: 13px 24px;
+    font-size: 15px;
+    font-weight: bold;
+    cursor: pointer;
+}
+.primary { background: var(--accent); color: #092019; }
+.secondary { background: #2b3b52; color: white; }
+button:disabled { opacity: .4; cursor: not-allowed; }
+.message { color: var(--muted); font-size: 13px; line-height: 1.6; margin-top: 20px; }
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 18px;
+    margin-top: 45px;
+}
+.info {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 22px;
+}
+.info h3 { margin-top: 0; color: var(--accent); }
+.info p { color: var(--muted); line-height: 1.6; font-size: 14px; }
+footer {
+    border-top: 1px solid var(--border);
+    text-align: center;
+    padding: 25px;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.7;
+}
+@media(max-width: 500px) {
+    header { padding: 18px; }
+    header small { display: none; }
+    .meter-card { padding: 24px 16px; }
+    main { padding-top: 38px; }
+}
+</style>
 </head>
+
 <body>
-    <h1>Welcome to NoiceTrace</h1>
-    <p>Your personal noise tracking tool is coming soon.</p>
+
+<header>
+    <div class="logo">Noice<span>Trace</span></div>
+    <small>Understand your sound environment</small>
+</header>
+
+<main>
+    <section class="hero">
+        <h1>Know Your <span>Sound Environment</span></h1>
+        <p>
+            Check relative sound levels around you using your device microphone.
+            Simple, private and free.
+        </p>
+    </section>
+
+    <section class="meter-card">
+        <div class="mode-label">SIMPLE NOISE METER</div>
+
+        <div class="level" id="level">--</div>
+        <div class="unit">Relative signal level (dBFS)</div>
+
+        <div class="status" id="status">Ready to measure</div>
+
+        <div class="meter-track">
+            <div class="meter-fill" id="meterFill"></div>
+        </div>
+
+        <div class="buttons">
+            <button class="primary" id="startBtn">Start measuring</button>
+            <button class="secondary" id="pauseBtn" disabled>Pause</button>
+            <button class="secondary" id="stopBtn" disabled>Stop</button>
+        </div>
+
+        <p class="message" id="message">
+            Press Start measuring and allow microphone access when your browser asks.
+            No audio is recorded or uploaded.
+        </p>
+    </section>
+
+    <section class="info-grid">
+        <div class="info">
+            <h3>Live sound monitoring</h3>
+            <p>See changes in the sound signal detected by your device microphone.</p>
+        </div>
+        <div class="info">
+            <h3>Privacy first</h3>
+            <p>Audio is processed locally in your browser. No audio recordings are saved or uploaded.</p>
+        </div>
+        <div class="info">
+            <h3>More features coming</h3>
+            <p>Advanced measurements, incident history and downloadable reports are planned.</p>
+        </div>
+    </section>
+</main>
+
+<footer>
+    NoiceTrace · Free browser-based noise monitoring<br>
+    Readings are relative microphone signal levels, not certified sound measurements.
+</footer>
+
+<script>
+const levelDisplay = document.getElementById("level");
+const statusDisplay = document.getElementById("status");
+const meterFill = document.getElementById("meterFill");
+const message = document.getElementById("message");
+const startBtn = document.getElementById("startBtn");
+const pauseBtn = document.getElementById("pauseBtn");
+const stopBtn = document.getElementById("stopBtn");
+
+let audioContext = null;
+let analyser = null;
+let microphone = null;
+let stream = null;
+let animationId = null;
+let paused = false;
+
+async function startMeter() {
+    try {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            throw new Error("Microphone access requires a supported browser and secure HTTPS connection.");
+        }
+
+        startBtn.disabled = true;
+        message.textContent = "Requesting microphone permission...";
+
+        stream = await navigator.mediaDevices.getUserMedia({
+            audio: {
+                echoCancellation: false,
+                noiseSuppression: false,
+                autoGainControl: false
+            }
+        });
+
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        await audioContext.resume();
+
+        analyser = audioContext.createAnalyser();
+        analyser.fftSize = 2048;
+
+        microphone = audioContext.createMediaStreamSource(stream);
+        microphone.connect(analyser);
+
+        paused = false;
+        startBtn.disabled = true;
+        pauseBtn.disabled = false;
+        stopBtn.disabled = false;
+        pauseBtn.textContent = "Pause";
+        message.textContent = "Microphone active. Audio is being processed on this device.";
+
+        measureSound();
+    } catch (error) {
+        startBtn.disabled = false;
+        message.textContent = "Could not start microphone: " + error.message;
+        statusDisplay.textContent = "Microphone unavailable";
+        stopAudio();
+    }
+}
+
+function measureSound() {
+    if (paused || !analyser) return;
+
+    const data = new Float32Array(analyser.fftSize);
+    analyser.getFloatTimeDomainData(data);
+
+    let sum = 0;
+    for (let i = 0; i < data.length; i++) {
+        sum += data[i] * data[i];
+    }
+
+    const rms = Math.sqrt(sum / data.length);
+    const dbfs = rms > 0 ? 20 * Math.log10(rms) : -100;
+    const shownLevel = Math.max(-100, Math.min(0, dbfs));
+
+    levelDisplay.textContent = shownLevel.toFixed(1);
+    meterFill.style.width = Math.max(0, Math.min(100, (shownLevel + 60) / 60 * 100)) + "%";
+
+    if (shownLevel < -35) {
+        statusDisplay.textContent = "Lower relative signal";
+    } else if (shownLevel < -20) {
+        statusDisplay.textContent = "Moderate relative signal";
+    } else {
+        statusDisplay.textContent = "Higher relative signal";
+    }
+
+    animationId = requestAnimationFrame(measureSound);
+}
+
+function pauseMeter() {
+    if (!stream) return;
+
+    paused = true;
+    cancelAnimationFrame(animationId);
+    stopAudio();
+    pauseBtn.disabled = true;
+    startBtn.disabled = false;
+    startBtn.textContent = "Resume measuring";
+    statusDisplay.textContent = "Measurement paused";
+    message.textContent = "The microphone has been disconnected. Press Resume measuring to continue.";
+}
+
+function stopAudio() {
+    if (animationId) cancelAnimationFrame(animationId);
+    if (stream) stream.getTracks().forEach(track => track.stop());
+    if (audioContext && audioContext.state !== "closed") audioContext.close();
+
+    stream = null;
+    audioContext = null;
+    analyser = null;
+    microphone = null;
+}
+
+function stopMeter() {
+    stopAudio();
+    paused = false;
+    startBtn.disabled = false;
+    startBtn.textContent = "Start measuring";
+    pauseBtn.disabled = true;
+    stopBtn.disabled = true;
+    pauseBtn.textContent = "Pause";
+    levelDisplay.textContent = "--";
+    meterFill.style.width = "0%";
+    statusDisplay.textContent = "Measurement stopped";
+    message.textContent = "Your microphone is disconnected. No audio was saved.";
+}
+
+startBtn.addEventListener("click", startMeter);
+pauseBtn.addEventListener("click", pauseMeter);
+stopBtn.addEventListener("click", stopMeter);
+</script>
+
 </body>
 </html>
-
