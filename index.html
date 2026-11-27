@@ -39,6 +39,7 @@ main { max-width: 1050px; margin: auto; padding: 55px 20px; }
 .hero h1 { font-size: clamp(32px, 5vw, 48px); margin: 0 0 15px; }
 .hero h1 span { color: var(--accent); }
 .hero p { color: var(--muted); line-height: 1.7; max-width: 650px; margin: auto; }
+
 .meter-card {
     background: var(--panel);
     border: 1px solid var(--border);
@@ -58,9 +59,15 @@ main { max-width: 1050px; margin: auto; padding: 55px 20px; }
     font-size: clamp(55px, 12vw, 85px);
     font-weight: bold;
     margin: 18px 0 5px;
+    transition: color .2s;
 }
 .unit { color: var(--muted); font-size: 14px; }
 .status { margin: 18px 0; font-size: 19px; font-weight: bold; }
+.duration {
+    color: var(--muted);
+    font-size: 14px;
+    margin-top: 12px;
+}
 .meter-track {
     height: 14px;
     background: #0c1421;
@@ -71,11 +78,16 @@ main { max-width: 1050px; margin: auto; padding: 55px 20px; }
 .meter-fill {
     width: 0%;
     height: 100%;
-    background: var(--accent);
+    background: #40d9ad;
     border-radius: 20px;
-    transition: width .15s;
+    transition: width .15s, background .2s;
 }
-.buttons { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; }
+.buttons {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
 button {
     border: 0;
     border-radius: 10px;
@@ -87,7 +99,12 @@ button {
 .primary { background: var(--accent); color: #092019; }
 .secondary { background: #2b3b52; color: white; }
 button:disabled { opacity: .4; cursor: not-allowed; }
-.message { color: var(--muted); font-size: 13px; line-height: 1.6; margin-top: 20px; }
+.message {
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.6;
+    margin-top: 20px;
+}
 .info-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
@@ -147,7 +164,11 @@ footer {
             <div class="meter-fill" id="meterFill"></div>
         </div>
 
-        <div class="buttons">
+        <div class="duration">
+            Measurement duration: <strong id="duration">00:00</strong>
+        </div>
+
+        <div class="buttons" style="margin-top:22px">
             <button class="primary" id="startBtn">Start measuring</button>
             <button class="secondary" id="pauseBtn" disabled>Pause</button>
             <button class="secondary" id="stopBtn" disabled>Stop</button>
@@ -185,6 +206,8 @@ const levelDisplay = document.getElementById("level");
 const statusDisplay = document.getElementById("status");
 const meterFill = document.getElementById("meterFill");
 const message = document.getElementById("message");
+const durationDisplay = document.getElementById("duration");
+
 const startBtn = document.getElementById("startBtn");
 const pauseBtn = document.getElementById("pauseBtn");
 const stopBtn = document.getElementById("stopBtn");
@@ -194,7 +217,29 @@ let analyser = null;
 let microphone = null;
 let stream = null;
 let animationId = null;
+
 let paused = false;
+let elapsedBeforeRun = 0;
+let runStartedAt = null;
+
+function formatTime(milliseconds) {
+    const totalSeconds = Math.floor(milliseconds / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+
+    return String(minutes).padStart(2, "0") + ":" +
+           String(seconds).padStart(2, "0");
+}
+
+function getElapsedTime() {
+    if (runStartedAt === null) return elapsedBeforeRun;
+
+    return elapsedBeforeRun + (performance.now() - runStartedAt);
+}
+
+function updateDuration() {
+    durationDisplay.textContent = formatTime(getElapsedTime());
+}
 
 async function startMeter() {
     try {
@@ -223,18 +268,25 @@ async function startMeter() {
         microphone.connect(analyser);
 
         paused = false;
+        runStartedAt = performance.now();
+
         startBtn.disabled = true;
         pauseBtn.disabled = false;
         stopBtn.disabled = false;
+
+        startBtn.textContent = "Start measuring";
         pauseBtn.textContent = "Pause";
-        message.textContent = "Microphone active. Audio is being processed on this device.";
+
+        message.textContent =
+            "Microphone active. Audio is being processed on this device.";
 
         measureSound();
     } catch (error) {
+        stopAudio();
+        runStartedAt = null;
         startBtn.disabled = false;
         message.textContent = "Could not start microphone: " + error.message;
         statusDisplay.textContent = "Microphone unavailable";
-        stopAudio();
     }
 }
 
@@ -245,6 +297,7 @@ function measureSound() {
     analyser.getFloatTimeDomainData(data);
 
     let sum = 0;
+
     for (let i = 0; i < data.length; i++) {
         sum += data[i] * data[i];
     }
@@ -254,36 +307,44 @@ function measureSound() {
     const shownLevel = Math.max(-100, Math.min(0, dbfs));
 
     levelDisplay.textContent = shownLevel.toFixed(1);
-    meterFill.style.width = Math.max(0, Math.min(100, (shownLevel + 60) / 60 * 100)) + "%";
+
+    meterFill.style.width =
+        Math.max(0, Math.min(100, (shownLevel + 60) / 60 * 100)) + "%";
 
     if (shownLevel < -35) {
-        statusDisplay.textContent = "Lower relative signal";
+        statusDisplay.textContent = "Quiet";
+        statusDisplay.style.color = "#40d9ad";
+        levelDisplay.style.color = "#40d9ad";
+        meterFill.style.background = "#40d9ad";
     } else if (shownLevel < -20) {
-        statusDisplay.textContent = "Moderate relative signal";
+        statusDisplay.textContent = "Moderate";
+        statusDisplay.style.color = "#f4c95d";
+        levelDisplay.style.color = "#f4c95d";
+        meterFill.style.background = "#f4c95d";
     } else {
-        statusDisplay.textContent = "Higher relative signal";
+        statusDisplay.textContent = "Loud";
+        statusDisplay.style.color = "#ff7272";
+        levelDisplay.style.color = "#ff7272";
+        meterFill.style.background = "#ff7272";
     }
 
+    updateDuration();
     animationId = requestAnimationFrame(measureSound);
 }
 
-function pauseMeter() {
-    if (!stream) return;
-
-    paused = true;
-    cancelAnimationFrame(animationId);
-    stopAudio();
-    pauseBtn.disabled = true;
-    startBtn.disabled = false;
-    startBtn.textContent = "Resume measuring";
-    statusDisplay.textContent = "Measurement paused";
-    message.textContent = "The microphone has been disconnected. Press Resume measuring to continue.";
-}
-
 function stopAudio() {
-    if (animationId) cancelAnimationFrame(animationId);
-    if (stream) stream.getTracks().forEach(track => track.stop());
-    if (audioContext && audioContext.state !== "closed") audioContext.close();
+    if (animationId !== null) {
+        cancelAnimationFrame(animationId);
+        animationId = null;
+    }
+
+    if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+    }
+
+    if (audioContext && audioContext.state !== "closed") {
+        audioContext.close();
+    }
 
     stream = null;
     audioContext = null;
@@ -291,18 +352,56 @@ function stopAudio() {
     microphone = null;
 }
 
-function stopMeter() {
+function pauseMeter() {
+    if (!stream) return;
+
+    elapsedBeforeRun = getElapsedTime();
+    runStartedAt = null;
+    paused = true;
+
     stopAudio();
+
+    pauseBtn.disabled = true;
+    startBtn.disabled = false;
+    startBtn.textContent = "Resume measuring";
+
+    statusDisplay.textContent = "Measurement paused";
+    statusDisplay.style.color = "#a8b4c7";
+
+    message.textContent =
+        "The microphone has been disconnected. Press Resume measuring to continue.";
+
+    updateDuration();
+}
+
+function stopMeter() {
+    elapsedBeforeRun = 0;
+    runStartedAt = null;
     paused = false;
+
+    stopAudio();
+
     startBtn.disabled = false;
     startBtn.textContent = "Start measuring";
+
     pauseBtn.disabled = true;
     stopBtn.disabled = true;
+
     pauseBtn.textContent = "Pause";
+
     levelDisplay.textContent = "--";
+    levelDisplay.style.color = "#f5f7fb";
+
     meterFill.style.width = "0%";
+    meterFill.style.background = "#40d9ad";
+
     statusDisplay.textContent = "Measurement stopped";
-    message.textContent = "Your microphone is disconnected. No audio was saved.";
+    statusDisplay.style.color = "#a8b4c7";
+
+    durationDisplay.textContent = "00:00";
+
+    message.textContent =
+        "Your microphone is disconnected. No audio was saved.";
 }
 
 startBtn.addEventListener("click", startMeter);
